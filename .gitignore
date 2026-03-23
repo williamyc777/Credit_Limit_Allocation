@@ -1,0 +1,20 @@
+# 大数据与生成物（勿提交；队友本地跑 pipeline 生成）
+data/*.csv
+data/*.zip
+output/*.csv
+output/*.pkl
+output/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+.env
+
+# macOS / IDE
+.DS_Store
+.idea/
+.vscode/
