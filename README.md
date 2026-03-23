@@ -35,10 +35,27 @@ project/
 │   └── causal_pd_analysis.py   # Demo: PD vs. scaled loan_amnt
 ├── requirements.txt
 ├── run_pipeline.sh
+├── package_output.sh     # zip outputs for sharing (optional)
 └── README.md
 ```
 
-**GitHub:** Raw Kaggle files and `output/*` (CSV, PKL, PNG) are **gitignored** to keep the repo lightweight. After cloning, download the CSV locally and rerun the pipeline to regenerate outputs.
+**GitHub:** Raw Kaggle files and loose `output/*` (CSV, PKL, PNG) are **gitignored** to keep the repo small. After cloning, download the CSV locally and rerun the pipeline to regenerate outputs—or use the **bundle zip** (below) if a teammate committed it.
+
+### Optional: share outputs as one zip on GitHub
+
+You **can** commit a **single archive** so teammates get artifacts without rerunning the full pipeline:
+
+```bash
+bash run_pipeline.sh          # generate CSV / PKL / PNG under output/
+bash package_output.sh        # creates output/model_outputs_bundle.zip
+git add output/model_outputs_bundle.zip
+git commit -m "Add bundled model outputs"
+git push
+```
+
+Teammates unzip `model_outputs_bundle.zip` into their local `output/` folder (same filenames as the pipeline).
+
+**GitHub limits:** Pushes fail if any file is **≥ ~100 MB**. Full `clean_data.csv` bundles often exceed that even when zipped—if `git push` is rejected, use **GitHub Releases** (attach the zip there), **Git LFS**, or cloud storage instead of committing the zip.
 
 ---
 
@@ -77,7 +94,7 @@ python src/causal_pd_analysis.py  # illustrative PD sensitivity to loan_amnt
 
 ---
 
-## Generated artifacts (local only)
+## Generated artifacts
 
 | Path | Purpose |
 |------|---------|
@@ -86,6 +103,7 @@ python src/causal_pd_analysis.py  # illustrative PD sensitivity to loan_amnt
 | `output/model.pkl` | Fitted logistic model |
 | `output/scaler.pkl` | Fitted `StandardScaler` (same feature order as training) |
 | `output/pd_distribution.png` | EDA figure |
+| `output/model_outputs_bundle.zip` | **Optional:** all of the above in one zip (`package_output.sh`); may be committed if under GitHub’s file-size limit |
 
 ---
 

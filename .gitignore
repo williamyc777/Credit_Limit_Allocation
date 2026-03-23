@@ -4,6 +4,9 @@ data/*.zip
 output/*.csv
 output/*.pkl
 output/*.png
+# Zips in output: ignore by default; allow only the named bundle (see package_output.sh)
+output/*.zip
+!output/model_outputs_bundle.zip
 
 # Python
 __pycache__/
