@@ -1,4 +1,4 @@
-# Credit Limit Allocation — DS & AI for Business
+# Credit Limit Allocation 
 
 This repository supports a **credit-line / lending decision** project built on **Lending Club** loan data. The goal is to estimate **probability of default (PD)** with a transparent baseline model, then use those estimates (and later **counterfactual changes** in exposure) to inform prescriptive decisions—e.g., how adjusting an amount analogous to a credit limit affects PD and expected outcomes.
 
