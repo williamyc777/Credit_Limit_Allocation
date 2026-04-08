@@ -17,8 +17,29 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 | **Baseline PD model** | **Logistic regression** with **standardized** numeric/boolean features; stratified train/test split. |
 | **Outputs** | `clean_data.csv`, per-loan **PD** in `pd_predictions.csv` (includes `loan_amnt` and realized `default` for downstream use), saved **`model.pkl`** and **`scaler.pkl`**, optional **PD distribution** plot. |
 | **Causal / prescriptive hook** | `loan_amnt` is retained as a **proxy for credit limit** in the feature set; the saved model can be used to **re-score** scenarios where only `loan_amnt` (or related exposure) changes—aligned with instructor feedback on **prescriptive analytics** and Chapter 11-style “what-if” on a single model. |
+| **EDA notebook** | `creditallocation_eda.ipynb` — team exploratory analysis tied to **credit-limit optimization** (see below). |
 
 **Note:** The default **0.5 classification threshold** under class imbalance yields **low recall on defaults**; **AUC** and **predicted PD** are still useful for ranking and for simulations that consume continuous PD. Improving recall (e.g. `class_weight`, threshold tuning, or richer models) is a natural next iteration—not required to unblock the rest of the workflow.
+
+---
+
+## Exploratory analysis: `creditallocation_eda.ipynb`
+
+The Jupyter notebook **`creditallocation_eda.ipynb`** (repository root) complements the Python pipeline. It reads only **`output/clean_data.csv`** and **`output/pd_predictions.csv`**—the same files produced by `preprocess.py` and `train_model.py` (no extra datasets).
+
+**Purpose for the business problem**
+
+- **PD is not fixed when limits change.** The course emphasis is *prescriptive* analytics: if we treat **`loan_amnt` as a proxy for credit limit**, then **changing that exposure should change predicted PD**. The notebook motivates that story with **data**, not only with the model.
+- **Action variable focus:** It highlights **`loan_amnt`** with **quantile bins** and **default rates by bin**, so the team can see empirically how larger amounts relate to default frequency before running **simulations** that **re-score PD** under counterfactual loan amounts.
+- **Risk context for decisions:** Plots and markdown cover **FICO**, **interest rate**, **DTI**, and key **categorical** risk tags (grade, term, home ownership), each tied to **why** those views matter when adjusting limits and expected profit.
+- **Link to the model:** The notebook includes **PD vs. `loan_amnt`** and a **ROC / AUC** view using stored predictions, connecting exploratory patterns to the **baseline PD model** the pipeline trains.
+
+**How to run**
+
+1. Generate `output/clean_data.csv` and `output/pd_predictions.csv` (e.g. `bash run_pipeline.sh` or the `python src/...` steps).  
+2. Open **`creditallocation_eda.ipynb`** with the **working directory set to the repository root** (the folder that contains `output/`).
+
+A closing section in the notebook, **“Implications for Credit Limit Optimization,”** summarizes how EDA supports the later steps: **simulate alternative limits → recompute PD → optimize expected profit**.
 
 ---
 
@@ -26,6 +47,7 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 
 ```
 project/
+├── creditallocation_eda.ipynb  # EDA: risk drivers, loan_amnt bins, PD linkage, optimization narrative
 ├── data/           # Place Kaggle CSV here (not committed; too large)
 ├── output/         # Generated artifacts (not committed)
 ├── src/
