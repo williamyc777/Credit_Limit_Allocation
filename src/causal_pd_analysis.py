@@ -1,66 +1,69 @@
 """
-老师建议的因果分析：估计改变 loan_amnt（credit limit proxy）对 PD 的影响
-
-用法：给定一个 loan 的特征，改变 loan_amnt，看模型预测的 PD 如何变化。
-可用于后续优化 credit limit 以最大化预期利润。
+Causal-style what-if analysis:
+Change loan_amnt and observe PD change using the best saved model.
 """
 
 import os
 import pickle
 import pandas as pd
-import numpy as np
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 CLEAN_DATA_PATH = os.path.join(PROJECT_ROOT, "output", "clean_data.csv")
 
 
-def load_model_and_scaler():
-    with open(os.path.join(OUTPUT_DIR, "model.pkl"), "rb") as f:
+def load_best_model_bundle():
+    with open(os.path.join(OUTPUT_DIR, "best_model.pkl"), "rb") as f:
         model = pickle.load(f)
+
     with open(os.path.join(OUTPUT_DIR, "scaler.pkl"), "rb") as f:
         scaler = pickle.load(f)
-    return model, scaler
+
+    with open(os.path.join(OUTPUT_DIR, "feature_cols.pkl"), "rb") as f:
+        feature_cols = pickle.load(f)
+
+    with open(os.path.join(OUTPUT_DIR, "best_model_name.txt"), "r", encoding="utf-8") as f:
+        best_model_name = f.read().strip()
+
+    return model, scaler, feature_cols, best_model_name
 
 
-def estimate_pd_change_with_loan_amnt(loan_amnt_new: float, row: pd.Series, feature_cols: list):
-    """
-    给定一行数据，将 loan_amnt 改为新值，预测 PD 变化。
-    row: 来自 clean_data 的一行（含所有特征）
-    """
-    model, scaler = load_model_and_scaler()
-    
+def estimate_pd_change_with_loan_amnt(loan_amnt_new, row, feature_cols, model, scaler, best_model_name):
     X = row[feature_cols].copy()
     X["loan_amnt"] = loan_amnt_new
-    X = X.reindex(feature_cols).values.reshape(1, -1)
-    
-    X_scaled = scaler.transform(X)
-    pd_new = model.predict_proba(X_scaled)[:, 1][0]
+    X_df = X.to_frame().T
+    X_df = X_df[feature_cols]
+
+    if best_model_name == "logistic_regression":
+        X_input = scaler.transform(X_df)
+    else:
+        X_input = X_df
+
+    pd_new = model.predict_proba(X_input)[:, 1][0]
     return pd_new
 
 
 def demo_causal_effect():
-    """演示：对若干 loan，展示 loan_amnt 变化时 PD 的变化"""
     df = pd.read_csv(CLEAN_DATA_PATH)
-    model, scaler = load_model_and_scaler()
-    
-    feature_cols = [c for c in df.columns if c != "default"]
-    
-    # 取前 5 个样本做演示
+    model, scaler, feature_cols, best_model_name = load_best_model_bundle()
+
     sample = df.head(5)
-    
-    print("因果分析演示：改变 loan_amnt 对 PD 的影响")
+
+    print("What-if analysis: changing loan_amnt and observing PD")
     print("=" * 60)
-    
+    print(f"Using best model: {best_model_name}")
+    print("=" * 60)
+
     for idx, row in sample.iterrows():
         loan_amnt_orig = row["loan_amnt"]
-        
-        # 测试 ±20% loan_amnt
+        print(f"\nSample row {idx} | original loan_amnt = ${loan_amnt_orig:,.0f}")
+
         for mult in [0.8, 1.0, 1.2]:
             amnt = loan_amnt_orig * mult
-            pd_new = estimate_pd_change_with_loan_amnt(amnt, row, feature_cols)
-            print(f"  loan_amnt: ${amnt:,.0f} -> PD: {pd_new:.4f}")
-        print()
+            pd_new = estimate_pd_change_with_loan_amnt(
+                amnt, row, feature_cols, model, scaler, best_model_name
+            )
+            print(f"loan_amnt: ${amnt:,.0f} -> PD: {pd_new:.4f}")
 
 
 if __name__ == "__main__":

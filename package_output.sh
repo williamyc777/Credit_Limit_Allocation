@@ -8,12 +8,16 @@ cd "$ROOT"
 ZIP="output/model_outputs_bundle.zip"
 mkdir -p output
 
+# Artifacts from src/train_model.py (multi-model) + preprocess + EDA plots
 FILES=(
   output/clean_data.csv
   output/pd_predictions.csv
-  output/model.pkl
   output/scaler.pkl
-  output/pd_distribution.png
+  output/best_model.pkl
+  output/all_models.pkl
+  output/feature_cols.pkl
+  output/best_model_name.txt
+  output/model_comparison.csv
 )
 
 missing=()
@@ -28,5 +32,11 @@ fi
 
 rm -f "$ZIP"
 zip -j "$ZIP" "${FILES[@]}"
+# Optional PNGs from eda_pd_distribution.py (include if present)
+shopt -s nullglob
+for png in output/PD_*_distribution.png output/pd_distribution_comparison.png; do
+  [[ -f "$png" ]] && zip -j "$ZIP" "$png"
+done
+shopt -u nullglob
 echo "Created: $ZIP  ($(du -h "$ZIP" | awk '{print $1}'))"
 echo "If du -h shows ~100MB or more, GitHub may reject the push — use GitHub Releases or cloud storage instead."

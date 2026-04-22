@@ -14,8 +14,8 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 | **Data cleaning** | Selects core features; restricts to **terminal** outcomes only (`Fully Paid` vs `Charged Off`) so labels are not contaminated by ongoing loans (e.g. `Current`). |
 | **Label construction** | Binary `default`: `1` = `Charged Off`, `0` = `Fully Paid`. |
 | **Feature handling** | Missing values dropped (simple baseline); categoricals one-hot encoded (`term`, `grade`, `emp_length`, `home_ownership`). `int_rate` parsed if stored as strings with `%`. |
-| **Baseline PD model** | **Logistic regression** with **standardized** numeric/boolean features; stratified train/test split. |
-| **Outputs** | `clean_data.csv`, per-loan **PD** in `pd_predictions.csv` (includes `loan_amnt` and realized `default` for downstream use), saved **`model.pkl`** and **`scaler.pkl`**, optional **PD distribution** plot. |
+| **PD models (baseline + comparison)** | **Logistic regression**, **decision tree**, and **random forest**; compare **AUC**; save **`best_model.pkl`**, `all_models.pkl`, `scaler.pkl` (for logistic), `feature_cols.pkl`, `model_comparison.csv`. Per-model PD columns in `pd_predictions.csv` plus **`PD`** / **`PD_best_model`** (aligned to the AUC-best model). |
+| **Outputs** | `clean_data.csv`, `pd_predictions.csv` (multi-column PDs + `default` + `loan_amnt`), model artifacts as above, optional EDA figures (`PD_*_distribution.png`, `pd_distribution_comparison.png`) from `eda_pd_distribution.py`. |
 | **Causal / prescriptive hook** | `loan_amnt` is retained as a **proxy for credit limit** in the feature set; the saved model can be used to **re-score** scenarios where only `loan_amnt` (or related exposure) changes—aligned with instructor feedback on **prescriptive analytics** and Chapter 11-style “what-if” on a single model. |
 | **EDA notebook** | `creditallocation_eda.ipynb` — team exploratory analysis tied to **credit-limit optimization** (see below). |
 
@@ -111,8 +111,10 @@ python src/eda_pd_distribution.py # optional: output/pd_distribution.png
 After training, you can run:
 
 ```bash
-python src/causal_pd_analysis.py  # illustrative PD sensitivity to loan_amnt
+python src/causal_pd_analysis.py  # what-if: change loan_amnt → PD (uses best_model.pkl)
 ```
+
+`causal_pd_analysis.py` requires training to have produced `best_model.pkl`, `scaler.pkl`, and `feature_cols.pkl` (run `train_model.py` after `preprocess.py`).
 
 ---
 
@@ -121,11 +123,15 @@ python src/causal_pd_analysis.py  # illustrative PD sensitivity to loan_amnt
 | Path | Purpose |
 |------|---------|
 | `output/clean_data.csv` | Clean modeling table |
-| `output/pd_predictions.csv` | Per-loan PD (+ `loan_amnt`, `default`) |
-| `output/model.pkl` | Fitted logistic model |
-| `output/scaler.pkl` | Fitted `StandardScaler` (same feature order as training) |
-| `output/pd_distribution.png` | EDA figure |
-| `output/model_outputs_bundle.zip` | **Optional:** all of the above in one zip (`package_output.sh`); may be committed if under GitHub’s file-size limit |
+| `output/pd_predictions.csv` | Per-loan columns: `loan_amnt`, `default`, `PD_logistic_regression`, `PD_decision_tree`, `PD_random_forest`, `PD_best_model`, and **`PD`** (copy of best) |
+| `output/best_model.pkl` | AUC-selected model for deployment / `causal_pd_analysis.py` |
+| `output/all_models.pkl` | Dict of all fitted models |
+| `output/scaler.pkl` | `StandardScaler` (features used for logistic) |
+| `output/feature_cols.pkl` | Column order for scoring |
+| `output/best_model_name.txt` | Name of best model (e.g. `random_forest`) |
+| `output/model_comparison.csv` | AUC by model |
+| `output/PD_*_distribution.png`, `output/pd_distribution_comparison.png` | From `eda_pd_distribution.py` |
+| `output/model_outputs_bundle.zip` | **Optional:** `package_output.sh` bundles key CSV/PKL/TXT; may be committed if under GitHub’s file-size limit |
 
 ---
 
