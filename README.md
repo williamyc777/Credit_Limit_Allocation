@@ -17,6 +17,7 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 | **PD models (baseline + comparison)** | **Logistic regression**, **decision tree**, and **random forest**; compare **AUC**; save **`best_model.pkl`**, `all_models.pkl`, `scaler.pkl` (for logistic), `feature_cols.pkl`, `model_comparison.csv`. Per-model PD columns in `pd_predictions.csv` plus **`PD`** / **`PD_best_model`** (aligned to the AUC-best model). |
 | **Outputs** | `clean_data.csv`, `pd_predictions.csv` (multi-column PDs + `default` + `loan_amnt`), model artifacts as above, optional EDA figures (`PD_*_distribution.png`, `pd_distribution_comparison.png`) from `eda_pd_distribution.py`. |
 | **Causal / prescriptive hook** | `loan_amnt` is retained as a **proxy for credit limit** in the feature set; the saved model can be used to **re-score** scenarios where only `loan_amnt` (or related exposure) changes—aligned with instructor feedback on **prescriptive analytics** and Chapter 11-style “what-if” on a single model. |
+| **Simulation** | `simulation_profit.py` — grid of `loan_amnt` multipliers, **re-score PD**, **expected profit** proxy, portfolio summary + per-loan sample export. |
 | **EDA notebook** | `creditallocation_eda.ipynb` — team exploratory analysis tied to **credit-limit optimization** (see below). |
 
 **Note (decision logic):** We do **not** treat **0.5** as a meaningful business cutoff—see instructor feedback. `sklearn`’s `.predict()` uses 0.5 for class labels, but **prescriptive** decisions should follow **explicit rules** (e.g. expected profit, cost asymmetry, or limit simulation). After training, run **`python src/decision_logic.py`** to scan thresholds with a simple **retrospective profit proxy** on the test split and compare to an arbitrary 0.5. Primary project use of PD remains **continuous** scores + **counterfactual** `loan_amnt` and portfolio-level **simulation**.
@@ -121,6 +122,15 @@ python src/decision_logic.py                 # optional: threshold scan vs. prof
 # Optional: python src/decision_logic.py --revenue 1.0 --loss 8.0
 ```
 Outputs `output/threshold_profit_scan.csv`.
+
+```bash
+python src/simulation_profit.py
+# Optional: python src/simulation_profit.py --margin 0.08 --lgd 0.45 --sample-rows 100000
+```
+
+**Counterfactual limits + expected profit (course prescriptive story):** `simulation_profit.py` scales `loan_amnt` by a grid of multipliers, **recomputes PD** with the saved best model for each counterfactual, and evaluates a stylized one-period **expected profit** per loan, then picks the multiplier with highest profit. Writes `output/simulation_portfolio_summary.csv` and a small `output/simulation_per_loan_sample.csv`. This is the bridge from **PD(model)** to **optimal limit on a grid** — complementing `decision_logic.py` (thresholding) and professor guidance on **changing exposure → new PD → new profit**.
+
+> Use the same Python environment that can run `sklearn` (e.g. Anaconda on Apple Silicon) if the system `python3` shows NumPy arch errors.
 
 ---
 
