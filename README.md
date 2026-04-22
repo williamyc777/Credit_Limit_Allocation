@@ -1,5 +1,7 @@
 # Credit Limit Allocation 
 
+**Status:** see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what is done vs.\ optional extensions.
+
 This repository supports a **credit-line / lending decision** project built on **Lending Club** loan data. The goal is to estimate **probability of default (PD)** with a transparent baseline model, then use those estimates (and later **counterfactual changes** in exposure) to inform prescriptive decisions—e.g., how adjusting an amount analogous to a credit limit affects PD and expected outcomes.
 
 ---
@@ -14,7 +16,7 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 | **Data cleaning** | Selects core features; restricts to **terminal** outcomes only (`Fully Paid` vs `Charged Off`) so labels are not contaminated by ongoing loans (e.g. `Current`). |
 | **Label construction** | Binary `default`: `1` = `Charged Off`, `0` = `Fully Paid`. |
 | **Feature handling** | Missing values dropped (simple baseline); categoricals one-hot encoded (`term`, `grade`, `emp_length`, `home_ownership`). `int_rate` parsed if stored as strings with `%`. |
-| **PD models (baseline + comparison)** | **Logistic regression**, **decision tree**, and **random forest**; compare **AUC**; save **`best_model.pkl`**, `all_models.pkl`, `scaler.pkl` (for logistic), `feature_cols.pkl`, `model_comparison.csv`. Per-model PD columns in `pd_predictions.csv` plus **`PD`** / **`PD_best_model`** (aligned to the AUC-best model). |
+| **PD models (baseline + comparison)** | **Logistic regression**, **decision tree**, and **random forest**; compare **ROC-AUC** and **PR-AUC** (average precision; useful under imbalance); save **`best_model.pkl`**, `all_models.pkl`, `scaler.pkl` (for logistic), `feature_cols.pkl`, `model_comparison.csv`. Per-model PD columns in `pd_predictions.csv` plus **`PD`** / **`PD_best_model`** (aligned to the AUC-best model). |
 | **Outputs** | `clean_data.csv`, `pd_predictions.csv` (multi-column PDs + `default` + `loan_amnt`), model artifacts as above, optional EDA figures (`PD_*_distribution.png`, `pd_distribution_comparison.png`) from `eda_pd_distribution.py`. |
 | **Causal / prescriptive hook** | `loan_amnt` is retained as a **proxy for credit limit** in the feature set; the saved model can be used to **re-score** scenarios where only `loan_amnt` (or related exposure) changes—aligned with instructor feedback on **prescriptive analytics** and Chapter 11-style “what-if” on a single model. |
 | **Simulation** | `simulation_profit.py` — grid of `loan_amnt` multipliers, **re-score PD**, **expected profit** proxy, portfolio summary + per-loan sample export. |

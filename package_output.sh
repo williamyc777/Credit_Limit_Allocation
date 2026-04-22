@@ -38,5 +38,15 @@ for png in output/PD_*_distribution.png output/pd_distribution_comparison.png; d
   [[ -f "$png" ]] && zip -j "$ZIP" "$png"
 done
 shopt -u nullglob
+
+# Optional analysis outputs (if present)
+for opt in \
+  output/threshold_profit_scan.csv \
+  output/simulation_portfolio_summary.csv \
+  output/simulation_per_loan_sample.csv
+do
+  [[ -f "$opt" ]] && zip -j "$ZIP" "$opt"
+done
+
 echo "Created: $ZIP  ($(du -h "$ZIP" | awk '{print $1}'))"
 echo "If du -h shows ~100MB or more, GitHub may reject the push — use GitHub Releases or cloud storage instead."

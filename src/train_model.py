@@ -5,7 +5,7 @@ Train 3 models:
 2. Decision Tree
 3. Random Forest
 
-Compare AUC and export:
+Compare AUC, PR-AUC (average precision on defaults) and export:
 - pd_predictions.csv
 - all_models.pkl
 - scaler.pkl
@@ -22,7 +22,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix
+from sklearn.metrics import (
+    average_precision_score,
+    classification_report,
+    confusion_matrix,
+    roc_auc_score,
+)
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLEAN_DATA_PATH = os.path.join(PROJECT_ROOT, "output", "clean_data.csv")
@@ -40,15 +45,16 @@ def load_clean_data():
 
 
 def evaluate_model(model, X_test_input, y_test, model_name):
-    """Print evaluation results and return AUC"""
+    """Print evaluation results; return AUC, scores, and PR-AUC (good for imbalanced default class)."""
     y_pred = model.predict(X_test_input)
     y_pred_prob = model.predict_proba(X_test_input)[:, 1]
     auc = roc_auc_score(y_test, y_pred_prob)
+    pr_auc = average_precision_score(y_test, y_pred_prob)
 
     print("=" * 60)
     print(f"Model: {model_name}")
     print("=" * 60)
-    print(f"AUC: {auc:.4f}")
+    print(f"AUC: {auc:.4f}  |  PR-AUC (avg precision): {pr_auc:.4f}")
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
     print("Confusion Matrix:")
@@ -58,7 +64,7 @@ def evaluate_model(model, X_test_input, y_test, model_name):
         "      For decision logic / profit-style thresholds, run: python src/decision_logic.py\n"
     )
 
-    return auc, y_pred_prob
+    return auc, y_pred_prob, pr_auc
 
 
 def train_models():
@@ -111,7 +117,7 @@ def train_models():
     # Train Logistic Regression
     lr_model = models["logistic_regression"]
     lr_model.fit(X_train_scaled, y_train)
-    lr_auc, _ = evaluate_model(
+    lr_auc, _, lr_pr = evaluate_model(
         lr_model,
         X_test_scaled,
         y_test,
@@ -121,13 +127,14 @@ def train_models():
     model_results["logistic_regression"] = {
         "model": lr_model,
         "auc": lr_auc,
+        "pr_auc": lr_pr,
         "needs_scaling": True
     }
 
     # Train Decision Tree
     dt_model = models["decision_tree"]
     dt_model.fit(X_train, y_train)
-    dt_auc, _ = evaluate_model(
+    dt_auc, _, dt_pr = evaluate_model(
         dt_model,
         X_test,
         y_test,
@@ -137,13 +144,14 @@ def train_models():
     model_results["decision_tree"] = {
         "model": dt_model,
         "auc": dt_auc,
+        "pr_auc": dt_pr,
         "needs_scaling": False
     }
 
     # Train Random Forest
     rf_model = models["random_forest"]
     rf_model.fit(X_train, y_train)
-    rf_auc, _ = evaluate_model(
+    rf_auc, _, rf_pr = evaluate_model(
         rf_model,
         X_test,
         y_test,
@@ -153,6 +161,7 @@ def train_models():
     model_results["random_forest"] = {
         "model": rf_model,
         "auc": rf_auc,
+        "pr_auc": rf_pr,
         "needs_scaling": False
     }
 
@@ -200,7 +209,8 @@ def train_models():
     # save metrics summary
     metrics_df = pd.DataFrame({
         "model": list(model_results.keys()),
-        "auc": [model_results[name]["auc"] for name in model_results]
+        "auc": [model_results[name]["auc"] for name in model_results],
+        "pr_auc": [model_results[name]["pr_auc"] for name in model_results],
     }).sort_values(by="auc", ascending=False)
 
     metrics_df.to_csv(os.path.join(OUTPUT_DIR, "model_comparison.csv"), index=False)

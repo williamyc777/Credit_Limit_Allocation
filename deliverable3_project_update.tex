@@ -116,10 +116,10 @@ We study how to support \textbf{credit limit} decisions using LendingClub data: 
 \subsection*{3.2 Baseline PD model}
 
 \begin{itemize}
-    \item \textbf{Algorithm:} Logistic regression (\texttt{scikit-learn}), \texttt{max\_iter=1000}, with \textbf{standardized} features.
+    \item \textbf{Algorithms compared:} Logistic regression, decision tree, and random forest (\texttt{scikit-learn}); logistic uses \textbf{standardized} features; best model by hold-out \textbf{ROC-AUC} is saved for scoring and simulation.
     \item \textbf{Split:} Train/test (e.g., 80/20), stratified on \texttt{default}, fixed random seed for reproducibility.
-    \item \textbf{Outputs saved for the team:} \texttt{clean\_data.csv}, per-loan \texttt{pd\_predictions.csv} (columns include \texttt{loan\_amnt}, realized \texttt{default}, and predicted \texttt{PD}), \texttt{model.pkl}, and \texttt{scaler.pkl} for downstream simulation and counterfactual scoring.
-    \item \textbf{Ranking performance:} ROC-AUC on the hold-out split is \textbf{competitive for a transparent baseline} (team: insert your latest numeric AUC from \texttt{train\_model.py} output here).
+    \item \textbf{Outputs:} \texttt{clean\_data.csv}, \texttt{pd\_predictions.csv} (per-model PD columns + \texttt{PD} aligned to best model), \texttt{best\_model.pkl}, \texttt{all\_models.pkl}, \texttt{scaler.pkl}, \texttt{feature\_cols.pkl}, \texttt{model\_comparison.csv} (\textbf{AUC} and \textbf{PR-AUC} for imbalanced defaults).
+    \item \textbf{Ranking performance:} Report both ROC-AUC and PR-AUC from \texttt{train\_model.py} (insert latest numbers from \texttt{model\_comparison.csv}).
     \item \textbf{Decision logic (instructor feedback):} We do \textbf{not} treat a \textbf{0.5} cutoff on PD as a business rule---it is only sklearn's default for hard labels from \texttt{.predict()}. We document \textbf{explicit decision analysis} via \texttt{src/decision\_logic.py} (grid of candidate thresholds under a simple retrospective \textbf{profit proxy} on the test split), and we rely primarily on \textbf{continuous PD} for ranking and for upcoming \textbf{limit / profit simulation}.
 \end{itemize}
 
@@ -128,10 +128,18 @@ We study how to support \textbf{credit limit} decisions using LendingClub data: 
 \begin{itemize}
     \item \textbf{Notebook:} \texttt{creditallocation\_eda.ipynb} documents business-oriented EDA on the same \texttt{clean\_data} and \texttt{pd\_predictions} files.
     \item \textbf{Key exhibits:} FICO vs.\ default; \textbf{loan amount} binned by quantiles (deciles) with default rates by bin; interest rate and DTI vs.\ default; default rates by grade, term, and home ownership (derived from one-hot columns); scatter of predicted PD vs.\ \texttt{loan\_amnt}; ROC curve for predicted PD vs.\ realized default.
-    \item \textbf{Narrative:} A dedicated section, \textit{Implications for Credit Limit Optimization}, links EDA to the prescriptive goal: \texttt{loan\_amnt} as exposure proxy, why PD should change when limits change, and connection to upcoming simulation.
+    \item \textbf{Narrative:} A dedicated section, \textit{Implications for Credit Limit Optimization}, links EDA to the prescriptive goal: \texttt{loan\_amnt} as exposure proxy, why PD should change when limits change, and connection to simulation below.
 \end{itemize}
 
-\subsection*{3.4 Collaboration, repository, and progress to date}
+\subsection*{3.4 Prescriptive simulation and threshold analysis}
+
+\begin{itemize}
+    \item \texttt{src/decision\_logic.py} --- scan approval thresholds on \texttt{P(default)} under a simple \textbf{retrospective profit proxy} (instructor: do not center analysis on 0.5).
+    \item \texttt{src/simulation\_profit.py} --- grid of \textbf{counterfactual} \texttt{loan\_amnt} multipliers; \textbf{re-score PD} with the best model for each alternative; choose the multiplier that maximizes a stylized \textbf{one-period expected profit} per loan; export portfolio and sample-level summaries.
+    \item \texttt{src/causal\_pd\_analysis.py} --- small ``what-if'' demo (change amount, observe PD) using the saved best model.
+\end{itemize}
+
+\subsection*{3.5 Collaboration, repository, and progress to date}
 
 The team maintains a \textbf{public GitHub repository} for reproducibility and shared development:
 
@@ -144,15 +152,15 @@ The team maintains a \textbf{public GitHub repository} for reproducibility and s
 \begin{itemize}
     \item \textbf{Documentation:} \texttt{README.md} describes the business problem, baseline pipeline, optional output bundle (\texttt{model\_outputs\_bundle.zip}), and how EDA ties to credit-limit optimization.
     \item \textbf{Data cleaning and labels:} \texttt{src/preprocess.py} --- feature selection, terminal-status filter, \texttt{default} label, one-hot encoding, writes \texttt{output/clean\_data.csv} (file gitignored locally; teammates regenerate or use bundle).
-    \item \textbf{Baseline PD model:} \texttt{src/train\_model.py} --- stratified split, \texttt{StandardScaler}, logistic regression, AUC / reports, saves \texttt{model.pkl}, \texttt{scaler.pkl}, and \texttt{pd\_predictions.csv}.
-    \item \textbf{Supporting scripts:} \texttt{src/eda\_pd\_distribution.py}, \texttt{src/causal\_pd\_analysis.py} (illustrative PD sensitivity to \texttt{loan\_amnt}); \texttt{src/decision\_logic.py} (threshold grid vs.\ simple profit proxy---addresses instructor guidance not to center on 0.5); \texttt{run\_pipeline.sh} and \texttt{package\_output.sh}.
+    \item \textbf{PD models:} \texttt{src/train\_model.py} --- multiple models, AUC and PR-AUC, \texttt{best\_model.pkl} and \texttt{pd\_predictions.csv}.
+    \item \textbf{Supporting scripts:} \texttt{src/eda\_pd\_distribution.py}; \texttt{src/causal\_pd\_analysis.py}; \texttt{src/decision\_logic.py}; \texttt{src/simulation\_profit.py}; \texttt{run\_pipeline.sh} (auto-selects Anaconda Python when available); \texttt{package\_output.sh}; \texttt{PROJECT\_STATUS.md} (checklist).
     \item \textbf{Exploratory analysis:} \texttt{creditallocation\_eda.ipynb} --- business-oriented visuals (FICO, DTI, rate, binned \texttt{loan\_amnt} vs.\ default rate, PD vs.\ amount, ROC) and narrative on prescriptive use of \texttt{loan\_amnt}.
     \item \textbf{Dependencies:} \texttt{requirements.txt} for Python packages.
 \end{itemize}
 
 \noindent\textbf{Repository hygiene:} Large Kaggle CSVs and most \texttt{output/*} artifacts are \textbf{gitignored} to stay within GitHub limits; a \textbf{zipped output bundle} may be committed when small enough so collaborators can run the notebook without retraining.
 
-\noindent\textbf{Not yet in the repository (in progress):} end-to-end \textbf{credit-limit simulation} and \textbf{expected-profit optimization} modules---these are the immediate next commits after this status report.
+\noindent\textbf{Further iteration (optional):} XGBoost/LightGBM, calibration plots, fairness discussion, production deployment---out of scope for the core class deliverable but listed in \texttt{PROJECT\_STATUS.md}.
 
 \section*{Part 4: Analysis of Preliminary Results}
 
@@ -169,7 +177,7 @@ The team maintains a \textbf{public GitHub repository} for reproducibility and s
 
 \begin{itemize}
     \item The \textbf{profit objective} will combine predicted PD with revenue and loss assumptions; the baseline gives a first PD surface to \textbf{re-evaluate under counterfactual limits} using the saved model and scaler.
-    \item We may add \texttt{class\_weight}, threshold optimization, or stronger learners (e.g., gradient boosting) \textbf{after} the end-to-end prescriptive path (simulate $\rightarrow$ re-score $\rightarrow$ optimize) is stable, per course guidance not to delay the full DS process.
+    \item The \textbf{prescriptive path} (re-score under counterfactual \texttt{loan\_amnt}, expected profit on a grid) is implemented in code; we may add \texttt{class\_weight}, richer profit accounting, or stronger learners (e.g., gradient boosting) as refinements for the final report.
 \end{itemize}
 
 \section*{Part 5: Issues and Challenges}
@@ -178,16 +186,16 @@ The team maintains a \textbf{public GitHub repository} for reproducibility and s
     \item \textbf{Class imbalance:} High accuracy on a default 0.5 label rule is misleading; we focus on \textbf{PD as a continuous input}, \textbf{threshold / profit analysis} where appropriate, and \textbf{simulation-based} policy comparison rather than a single hard cutoff.
     \item \textbf{Causal interpretation:} Historical correlation of loan size and default reflects \textbf{selection} (who gets larger loans) and macro factors; we treat the logistic model as a \textbf{scenario engine} for ``what-if'' limits, not as a randomized experiment.
     \item \textbf{Data and tooling:} Large file sizes complicate GitHub workflows; teammates must regenerate \texttt{output/} locally or use shared bundles. Notebook paths must be run from the repository root so \texttt{output/} resolves correctly.
-    \item \textbf{Remaining work:} Implement explicit \textbf{credit-limit simulation} (grid or optimization over \texttt{loan\_amnt}), expected profit computation, and comparison to baseline policies; incorporate professor's Chapter~11-style discussion of \textbf{single-model counterfactuals} in the final write-up.
+    \item \textbf{Refinement:} Tune stylized \texttt{margin}/\texttt{lgd} and revenue assumptions in \texttt{simulation\_profit.py} to match the report's business story; add stronger learners (e.g.\ gradient boosting) or calibration if time permits; incorporate professor's Chapter~11-style discussion of \textbf{single-model counterfactuals} in the final write-up.
     \item \textbf{Optional environment note:} Some laptops showed architecture mismatches for scientific Python stacks; the team standardizes on a consistent conda/venv where needed.
 \end{itemize}
 
 \section*{Part 6: Next steps (brief)}
 
 \begin{enumerate}[label=\arabic*.]
-    \item Finalize PD re-scoring utilities for counterfactual \texttt{loan\_amnt} values per borrower.
-    \item Build portfolio simulation: alternative limits $\rightarrow$ PD $\rightarrow$ expected profit; compare to baselines.
-    \item Refine report figures from the EDA notebook and model evaluation for the final presentation.
+    \item Integrate \textbf{simulation and threshold} results (CSV summaries from \texttt{simulation\_profit.py} and \texttt{decision\_logic.py}) into the final report and presentation figures.
+    \item Align \textbf{profit parameters} and narrative with the business case; optionally add PR-curve figures alongside ROC for the minority default class.
+    \item Final polish: executive summary, limitations, and team-specific contributions.
 \end{enumerate}
 
 \end{document}
