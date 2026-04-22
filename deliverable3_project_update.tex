@@ -120,7 +120,7 @@ We study how to support \textbf{credit limit} decisions using LendingClub data: 
     \item \textbf{Split:} Train/test (e.g., 80/20), stratified on \texttt{default}, fixed random seed for reproducibility.
     \item \textbf{Outputs saved for the team:} \texttt{clean\_data.csv}, per-loan \texttt{pd\_predictions.csv} (columns include \texttt{loan\_amnt}, realized \texttt{default}, and predicted \texttt{PD}), \texttt{model.pkl}, and \texttt{scaler.pkl} for downstream simulation and counterfactual scoring.
     \item \textbf{Ranking performance:} ROC-AUC on the hold-out split is \textbf{competitive for a transparent baseline} (team: insert your latest numeric AUC from \texttt{train\_model.py} output here).
-    \item \textbf{Classification at 0.5 threshold:} Accuracy is dominated by the majority class; \textbf{recall on defaults} is \textbf{low} under the default threshold---expected under imbalance when no threshold tuning or class weights are used.
+    \item \textbf{Decision logic (instructor feedback):} We do \textbf{not} treat a \textbf{0.5} cutoff on PD as a business rule---it is only sklearn's default for hard labels from \texttt{.predict()}. We document \textbf{explicit decision analysis} via \texttt{src/decision\_logic.py} (grid of candidate thresholds under a simple retrospective \textbf{profit proxy} on the test split), and we rely primarily on \textbf{continuous PD} for ranking and for upcoming \textbf{limit / profit simulation}.
 \end{itemize}
 
 \subsection*{3.3 Exploratory analysis and visualization}
@@ -145,7 +145,7 @@ The team maintains a \textbf{public GitHub repository} for reproducibility and s
     \item \textbf{Documentation:} \texttt{README.md} describes the business problem, baseline pipeline, optional output bundle (\texttt{model\_outputs\_bundle.zip}), and how EDA ties to credit-limit optimization.
     \item \textbf{Data cleaning and labels:} \texttt{src/preprocess.py} --- feature selection, terminal-status filter, \texttt{default} label, one-hot encoding, writes \texttt{output/clean\_data.csv} (file gitignored locally; teammates regenerate or use bundle).
     \item \textbf{Baseline PD model:} \texttt{src/train\_model.py} --- stratified split, \texttt{StandardScaler}, logistic regression, AUC / reports, saves \texttt{model.pkl}, \texttt{scaler.pkl}, and \texttt{pd\_predictions.csv}.
-    \item \textbf{Supporting scripts:} \texttt{src/eda\_pd\_distribution.py}, \texttt{src/causal\_pd\_analysis.py} (illustrative PD sensitivity to \texttt{loan\_amnt}); \texttt{run\_pipeline.sh} and \texttt{package\_output.sh}.
+    \item \textbf{Supporting scripts:} \texttt{src/eda\_pd\_distribution.py}, \texttt{src/causal\_pd\_analysis.py} (illustrative PD sensitivity to \texttt{loan\_amnt}); \texttt{src/decision\_logic.py} (threshold grid vs.\ simple profit proxy---addresses instructor guidance not to center on 0.5); \texttt{run\_pipeline.sh} and \texttt{package\_output.sh}.
     \item \textbf{Exploratory analysis:} \texttt{creditallocation\_eda.ipynb} --- business-oriented visuals (FICO, DTI, rate, binned \texttt{loan\_amnt} vs.\ default rate, PD vs.\ amount, ROC) and narrative on prescriptive use of \texttt{loan\_amnt}.
     \item \textbf{Dependencies:} \texttt{requirements.txt} for Python packages.
 \end{itemize}
@@ -162,7 +162,7 @@ The team maintains a \textbf{public GitHub repository} for reproducibility and s
     \item \textbf{Credit quality:} Lower FICO (range low) aligns with higher default frequency, consistent with underwriting intuition.
     \item \textbf{Pricing and capacity:} Higher interest rates and higher DTI mass among defaulters support treating pricing and repayment capacity as co-predictors with exposure.
     \item \textbf{Exposure (\texttt{loan\_amnt}):} Binned default rates show how risk co-moves with loan size in historical data---a descriptive prior for why \textbf{perturbing loan amount in the model} should move predicted PD, matching instructor feedback on prescriptive analytics.
-    \item \textbf{Model alignment:} PD vs.\ \texttt{loan\_amnt} and ROC analysis indicate the baseline produces a sensible \textbf{ranking} signal for risk, even if binary decisions at 0.5 are not tuned for default capture.
+    \item \textbf{Model alignment:} PD vs.\ \texttt{loan\_amnt} and ROC analysis indicate the models provide a sensible \textbf{ranking} signal; \textbf{operating points} (approve/decline or limit changes) should be chosen by \textbf{stated business logic}---not an arbitrary 0.5 probability cutoff.
 \end{itemize}
 
 \subsection*{4.2 Implications for the next modeling stage}
@@ -175,7 +175,7 @@ The team maintains a \textbf{public GitHub repository} for reproducibility and s
 \section*{Part 5: Issues and Challenges}
 
 \begin{itemize}
-    \item \textbf{Class imbalance:} High accuracy masks poor default recall at 0.5; for \textbf{business metrics} we rely on PD as a continuous input and will validate policy choices in simulation rather than only accuracy at a fixed threshold.
+    \item \textbf{Class imbalance:} High accuracy on a default 0.5 label rule is misleading; we focus on \textbf{PD as a continuous input}, \textbf{threshold / profit analysis} where appropriate, and \textbf{simulation-based} policy comparison rather than a single hard cutoff.
     \item \textbf{Causal interpretation:} Historical correlation of loan size and default reflects \textbf{selection} (who gets larger loans) and macro factors; we treat the logistic model as a \textbf{scenario engine} for ``what-if'' limits, not as a randomized experiment.
     \item \textbf{Data and tooling:} Large file sizes complicate GitHub workflows; teammates must regenerate \texttt{output/} locally or use shared bundles. Notebook paths must be run from the repository root so \texttt{output/} resolves correctly.
     \item \textbf{Remaining work:} Implement explicit \textbf{credit-limit simulation} (grid or optimization over \texttt{loan\_amnt}), expected profit computation, and comparison to baseline policies; incorporate professor's Chapter~11-style discussion of \textbf{single-model counterfactuals} in the final write-up.

@@ -19,7 +19,7 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 | **Causal / prescriptive hook** | `loan_amnt` is retained as a **proxy for credit limit** in the feature set; the saved model can be used to **re-score** scenarios where only `loan_amnt` (or related exposure) changes—aligned with instructor feedback on **prescriptive analytics** and Chapter 11-style “what-if” on a single model. |
 | **EDA notebook** | `creditallocation_eda.ipynb` — team exploratory analysis tied to **credit-limit optimization** (see below). |
 
-**Note:** The default **0.5 classification threshold** under class imbalance yields **low recall on defaults**; **AUC** and **predicted PD** are still useful for ranking and for simulations that consume continuous PD. Improving recall (e.g. `class_weight`, threshold tuning, or richer models) is a natural next iteration—not required to unblock the rest of the workflow.
+**Note (decision logic):** We do **not** treat **0.5** as a meaningful business cutoff—see instructor feedback. `sklearn`’s `.predict()` uses 0.5 for class labels, but **prescriptive** decisions should follow **explicit rules** (e.g. expected profit, cost asymmetry, or limit simulation). After training, run **`python src/decision_logic.py`** to scan thresholds with a simple **retrospective profit proxy** on the test split and compare to an arbitrary 0.5. Primary project use of PD remains **continuous** scores + **counterfactual** `loan_amnt` and portfolio-level **simulation**.
 
 ---
 
@@ -115,6 +115,12 @@ python src/causal_pd_analysis.py  # what-if: change loan_amnt → PD (uses best_
 ```
 
 `causal_pd_analysis.py` requires training to have produced `best_model.pkl`, `scaler.pkl`, and `feature_cols.pkl` (run `train_model.py` after `preprocess.py`).
+
+```bash
+python src/decision_logic.py                 # optional: threshold scan vs. profit proxy (not 0.5-centric)
+# Optional: python src/decision_logic.py --revenue 1.0 --loss 8.0
+```
+Outputs `output/threshold_profit_scan.csv`.
 
 ---
 

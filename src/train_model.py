@@ -53,7 +53,10 @@ def evaluate_model(model, X_test_input, y_test, model_name):
     print(classification_report(y_test, y_pred))
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
-    print()
+    print(
+        "Note: .predict() uses sklearn's default 0.5 on P(default) — not a business rule.\n"
+        "      For decision logic / profit-style thresholds, run: python src/decision_logic.py\n"
+    )
 
     return auc, y_pred_prob
 

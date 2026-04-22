@@ -14,4 +14,8 @@ echo "Step 3: 生成 PD 分布图..."
 python src/eda_pd_distribution.py
 
 echo ""
+echo "Step 4 (optional): 决策逻辑 / 阈值扫描 (非 0.5 中心)..."
+python src/decision_logic.py
+
+echo ""
 echo "完成！交付物在 output/ 目录"
