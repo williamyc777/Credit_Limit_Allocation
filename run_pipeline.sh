@@ -42,4 +42,8 @@ echo "Step 5: 反事实额度 + 期望利润 simulation..."
 "$PYTHON" src/simulation_profit.py
 
 echo ""
+echo "Step 6: 生成决策 / 利润可视化..."
+"$PYTHON" src/visualize_decision_outputs.py
+
+echo ""
 echo "完成！交付物在 output/ 目录"

@@ -34,7 +34,15 @@ rm -f "$ZIP"
 zip -j "$ZIP" "${FILES[@]}"
 # Optional PNGs from eda_pd_distribution.py (include if present)
 shopt -s nullglob
-for png in output/PD_*_distribution.png output/pd_distribution_comparison.png; do
+for png in \
+  output/PD_*_distribution.png \
+  output/pd_distribution_comparison.png \
+  output/roc_curves_all_models.png \
+  output/pr_curves_all_models.png \
+  output/calibration_best_model.png \
+  output/threshold_profit_curve.png \
+  output/profit_distribution.png
+do
   [[ -f "$png" ]] && zip -j "$ZIP" "$png"
 done
 shopt -u nullglob

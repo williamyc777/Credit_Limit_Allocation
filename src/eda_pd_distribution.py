@@ -49,7 +49,8 @@ def main():
         "PD_logistic_regression": "Logistic Regression",
         "PD_decision_tree": "Decision Tree",
         "PD_random_forest": "Random Forest",
-        "PD_best_model": "Best Model"
+        "PD_hist_gradient_boosting": "HistGradientBoosting",
+        "PD_best_model": "Best Model",
     }
 
     print("=" * 60)

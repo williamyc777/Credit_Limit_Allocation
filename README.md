@@ -1,6 +1,6 @@
 # Credit Limit Allocation 
 
-**Status:** see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what is done vs.\ optional extensions.
+**Status:** see [`PROJECT_STATUS.md`](PROJECT_STATUS.md) and [`docs/COMPLETE_PROJECT_GUIDE.md`](docs/COMPLETE_PROJECT_GUIDE.md) for the full end-to-end picture and optional extensions.
 
 This repository supports a **credit-line / lending decision** project built on **Lending Club** loan data. The goal is to estimate **probability of default (PD)** with a transparent baseline model, then use those estimates (and later **counterfactual changes** in exposure) to inform prescriptive decisions—e.g., how adjusting an amount analogous to a credit limit affects PD and expected outcomes.
 
@@ -16,8 +16,8 @@ The following baseline pipeline is **implemented and runnable end-to-end**:
 | **Data cleaning** | Selects core features; restricts to **terminal** outcomes only (`Fully Paid` vs `Charged Off`) so labels are not contaminated by ongoing loans (e.g. `Current`). |
 | **Label construction** | Binary `default`: `1` = `Charged Off`, `0` = `Fully Paid`. |
 | **Feature handling** | Missing values dropped (simple baseline); categoricals one-hot encoded (`term`, `grade`, `emp_length`, `home_ownership`). `int_rate` parsed if stored as strings with `%`. |
-| **PD models (baseline + comparison)** | **Logistic regression**, **decision tree**, and **random forest**; compare **ROC-AUC** and **PR-AUC** (average precision; useful under imbalance); save **`best_model.pkl`**, `all_models.pkl`, `scaler.pkl` (for logistic), `feature_cols.pkl`, `model_comparison.csv`. Per-model PD columns in `pd_predictions.csv` plus **`PD`** / **`PD_best_model`** (aligned to the AUC-best model). |
-| **Outputs** | `clean_data.csv`, `pd_predictions.csv` (multi-column PDs + `default` + `loan_amnt`), model artifacts as above, optional EDA figures (`PD_*_distribution.png`, `pd_distribution_comparison.png`) from `eda_pd_distribution.py`. |
+| **PD models (baseline + comparison)** | **Logistic regression**, **decision tree**, **random forest**, and **sklearn `HistGradientBoostingClassifier`**; compare **ROC-AUC** and **PR-AUC**; save **`best_model.pkl`**, `all_models.pkl`, `scaler.pkl` (for logistic), `feature_cols.pkl`, `model_comparison.csv`. Per-model PD columns in `pd_predictions.csv` plus **`PD`** / **`PD_best_model`** (AUC-best). |
+| **Outputs** | `clean_data.csv`, `pd_predictions.csv`, model artifacts, EDA figures from `eda_pd_distribution.py` (`PD_*_distribution.png`, `pd_distribution_comparison.png`), and **test-set** `roc_curves_all_models.png`, `pr_curves_all_models.png`, `calibration_best_model.png` from `evaluation_plots` (invoked at end of `train_model.py`). |
 | **Causal / prescriptive hook** | `loan_amnt` is retained as a **proxy for credit limit** in the feature set; the saved model can be used to **re-score** scenarios where only `loan_amnt` (or related exposure) changes—aligned with instructor feedback on **prescriptive analytics** and Chapter 11-style “what-if” on a single model. |
 | **Simulation** | `simulation_profit.py` — grid of `loan_amnt` multipliers, **re-score PD**, **expected profit** proxy, portfolio summary + per-loan sample export. |
 | **EDA notebook** | `creditallocation_eda.ipynb` — team exploratory analysis tied to **credit-limit optimization** (see below). |
@@ -54,10 +54,13 @@ project/
 ├── data/           # Place Kaggle CSV here (not committed; too large)
 ├── output/         # Generated artifacts (not committed)
 ├── src/
-│   ├── preprocess.py           # Cleaning + labels
-│   ├── train_model.py          # Logistic baseline + PD export
-│   ├── eda_pd_distribution.py  # PD histograms
-│   └── causal_pd_analysis.py   # Demo: PD vs. scaled loan_amnt
+│   ├── preprocess.py            # Cleaning + labels
+│   ├── train_model.py            # Logistic, DT, RF, HistGB; AUC/PR; figures
+│   ├── evaluation_plots.py         # ROC/PR (all models), calibration (best on test)
+│   ├── eda_pd_distribution.py     # PD histograms
+│   ├── decision_logic.py         # Threshold scan / profit proxy
+│   ├── simulation_profit.py      # Counterfactual loan_amnt → expected profit
+│   └── causal_pd_analysis.py  # Demo: PD vs. scaled loan_amnt
 ├── requirements.txt
 ├── run_pipeline.sh
 ├── package_output.sh     # zip outputs for sharing (optional)
